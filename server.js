@@ -7,10 +7,17 @@ const { google } = require('googleapis');
 const app = express();
 app.use(bodyParser.json());
 
+// Simple middleware to set CORS headers manually
+app.use((req, res, next) => {
+    res.setHeader('Access-Control-Allow-Origin', '*'); // Allow all origins
+    res.setHeader('Access-Control-Allow-Methods', 'POST'); // Allow POST method
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type'); // Allow Content-Type header
+    next();
+});
+
 const PORT = process.env.PORT || 3000;
 const SHEET_ID = process.env.SHEET_ID;
 
-// Set up Google Sheets authentication
 const auth = new google.auth.GoogleAuth({
     credentials: JSON.parse(process.env.GOOGLE_CREDENTIALS),
     scopes: ['https://www.googleapis.com/auth/spreadsheets.readonly'],
@@ -18,7 +25,6 @@ const auth = new google.auth.GoogleAuth({
 
 app.post('/search', async (req, res) => {
     const userId = req.body.id;
-    console.log("Received ID:", userId);
 
     try {
         const authClient = await auth.getClient();
@@ -26,7 +32,7 @@ app.post('/search', async (req, res) => {
 
         const response = await sheets.spreadsheets.values.get({
             spreadsheetId: SHEET_ID,
-            range: 'Sheet1!A:J', // Adjust range based on your Sheet
+            range: 'Sheet1!A:J', // Adjust based on your Google Sheet
         });
 
         const rows = response.data.values;
@@ -49,7 +55,7 @@ app.post('/search', async (req, res) => {
             res.status(404).json({ message: 'ID not found' });
         }
     } catch (error) {
-        console.error("Error connecting to Google Sheets:", error);
+        console.error('Error connecting to Google Sheets:', error);
         res.status(500).json({ error: 'Failed to retrieve data' });
     }
 });
